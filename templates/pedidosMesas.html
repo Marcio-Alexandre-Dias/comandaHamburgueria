@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Comanda de Atendimento</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+  <div class="bg-white shadow-xl rounded-2xl p-6 w-full max-w-md">
+    <h1 class="text-2xl font-bold text-center text-gray-700 mb-6">Comanda de Atendimento</h1>
+
+    <!-- Tipo de Pedido -->
+    <div class="mb-4">
+      <p class="text-sm font-medium text-gray-600 mb-2">Tipo de Pedido:</p>
+      <div class="flex gap-2">
+        <button id="btnMesa" class="flex-1 bg-green-600 text-white py-2 rounded-lg font-semibold hover:bg-green-700 transition">Atendimento em Mesa</button>
+        <button id="btnEntrega" class="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg font-semibold hover:bg-gray-300 transition">Entrega</button>
+      </div>
+    </div>
+
+    <!-- Nome do Cliente 
+    <input type="text" placeholder="Nome do cliente"
+      class="w-full mb-4 border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-green-600">
+-->
+    <!--Mesas -->
+    <div id="mesas" class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
+      <!-- Geração automática com JS -->
+    </div>
+
+    <!-- Observações 
+    <textarea placeholder="Observação do pedido (opcional)" 
+      class="w-full border border-gray-300 rounded-lg p-2 h-20 focus:outline-none focus:ring-2 focus:ring-green-600 mb-4"></textarea>
+
+    Botão principal -->
+    <button class="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition">
+      Registrar Pedido
+    </button>
+  </div>
+
+  <script>
+    // Gera automaticamente as mesas
+    const mesasDiv = document.getElementById('mesas');
+    for (let i = 1; i <= 20; i++) {
+      const btn = document.createElement('button');
+      btn.textContent = `Mesa ${i}`;
+      btn.className = 'border border-green-600 text-green-700 rounded-lg py-2 font-semibold hover:bg-green-600 hover:text-white transition';
+      btn.onclick = () => {
+        document.querySelectorAll('#mesas button').forEach(b => b.classList.remove('bg-green-600', 'text-white'));
+        btn.classList.add('bg-green-600', 'text-white');
+      };
+      mesasDiv.appendChild(btn);
+    }
+
+    // Alterna entre os modos de atendimento
+    const btnMesa = document.getElementById('btnMesa');
+    const btnEntrega = document.getElementById('btnEntrega');
+    const mesasContainer = document.getElementById('mesas');
+
+    btnMesa.onclick = () => {
+      btnMesa.classList.add('bg-green-600', 'text-white');
+      btnEntrega.classList.remove('bg-green-600', 'text-white');
+      btnEntrega.classList.add('bg-gray-200', 'text-gray-700');
+      mesasContainer.classList.remove('hidden');
+    };
+
+    btnEntrega.onclick = () => {
+      btnEntrega.classList.add('bg-green-600', 'text-white');
+      btnMesa.classList.remove('bg-green-600', 'text-white');
+      btnMesa.classList.add('bg-gray-200', 'text-gray-700');
+      mesasContainer.classList.add('hidden');
+    };
+  </script>
+</body>
+</html>

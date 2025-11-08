@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de comandas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center p-6">
+      
+    <!-- Cabeçalho -->
+    <header class="mb-10 text-center">
+        <h1 class="text-3xl font-bold text-red-800">Sistema de pedidos de mesas</h1>
+        <p class="text-gray-500 mt-2">Gerencie serviços de pedidos das mesas</p>
+    </header>
+
+     <!-- Conteúdo principal -->
+    <main class="grid grid-cols-1 sm:grid-cols-3 gap-6 w-full max-w-4xl">
+
+      <!-- Card Acesso as mesas -->
+    <a href="pedidosMesas.html"
+       class="bg-white-20 hover:bg-green-600 hover:text-white shadow-lg rounded-2xl p-8 flex flex-col items-center justify-center transition group">
+      <div class="bg-green-100 group-hover:bg-green-700 text-green-600 group-hover:text-white p-4 rounded-full mb-4">
+        🧾
+      </div>
+      <h2 class="text-xl font-semibold mb-2">Acesso a mesas</h2>
+      <p class="text-gray-500 group-hover:text-red-100 text-center text-sm">
+        Registre e organize os serviços de atendimento por mesa.
+      </p>
+    </a>
+
+          <!-- Card Consulta pedidos -->
+    <a href="pedidosConsulta.html"
+      class="bg-white hover:bg-blue-600 hover:text-white shadow-lg rounded-2xl p-8 flex flex-col items-center justify-center transition group"> 
+      <div class="bg-blue-100 group-hover:bg-blue-700 text-blue-600 group-hover:text-white p-4 rounded-full mb-4">
+        🧾
+      </div>
+      <h2 class="text-xl font-semibold mb-2">Acesso aos pedidos</h2>
+      <p class="text-gray-500 group-hover:text-red-100 text-center text-sm">
+        Consulte pedidos realizados no período atual.
+      </p>
+    </a>
+
+
+        <!-- Card Incluir Profissionais -->
+    <a href="pedidosIncluirProfissionais.html"
+       class="bg-white hover:bg-red-600 hover:text-white shadow-lg rounded-2xl p-8 flex flex-col items-center justify-center transition group">
+      <div class="bg-red-100 group-hover:bg-red-700 text-red-600 group-hover:text-white p-4 rounded-full mb-4">
+        👷‍♂️
+      </div>
+      <h2 class="text-xl font-semibold mb-2">Incluir Profissionais</h2>
+      <p class="text-gray-500 group-hover:text-green-100 text-center text-sm">
+        Gerencie e atribua responsáveis pelo atendimento e serviços.
+      </p>
+    </a>
+
+
+
+
+
+</body>
+</html>
