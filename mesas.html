@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Comanda de Atendimento</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+  <div class="bg-white shadow-xl rounded-2xl p-6 w-full max-w-md">
+    <h1 class="text-2xl font-bold text-center text-gray-700 mb-6">Comanda de Atendimento</h1>
+
+
+
+    <a href="index.html"
+    class="px-4 py-2 rounded-lg flex-1 bg-green-900 text-white font-medium text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition">
+    Menu principal
+    </a>
+
+    <!-- Tipo de Pedido -->
+    <br><br>
+     <div class="mb-4">
+      <p class="text-sm font-medium text-gray-600 mb-2">Tipo de Pedido:</p>
+      <div class="flex gap-2">
+        <button id="btnMesa" class="flex-1 bg-green-600 text-white py-2 rounded-lg font-semibold hover:bg-green-700 transition">Atendimento em Mesa</button>
+        <button id="btnEntrega" class="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg font-semibold hover:bg-gray-300 transition">Entrega</button>
+      </div>
+    </div>
+
+    <!-- Mesas -->
+    <div id="mesas" class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4"></div>
+  </div>
+  
+
+  <!-- Modal -->
+  <div id="modal" class="hidden fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+    <div class="bg-white rounded-xl p-6 shadow-lg w-96 max-h-[90vh] overflow-y-auto">
+      <h2 id="tituloMesa" class="text-xl font-semibold mb-4 text-center"></h2>
+
+      <label class="block mb-2 text-sm font-medium">Cliente:</label>
+      <input id="cliente" type="text" placeholder="Digite o nome do cliente"
+             class="border rounded w-full p-2 mb-4">
+
+      <p class="font-semibold mb-2">Produtos disponíveis:</p>
+      <div id="listaProdutos" class="flex flex-col gap-3 mb-4"></div>
+
+      <div class="flex justify-between mt-4">
+        <button onclick="fecharModal()" class="bg-gray-400 text-white px-4 py-2 rounded-lg">Cancelar</button>
+        <button onclick="confirmarPedido()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">Confirmar</button>
+      </div>
+      
+    </div>
+      
+
+
+  </div>
+
+            
+
+
+  <script>
+    // ================= CONFIG SUPABASE =================
+    const SUPABASE_URL = "https://nkqgetlubqewnxqyrhmw.supabase.co";
+    const SUPABASE_API_KEY = "sb_publishable_CtrQ2YxJHWByEOltZk1FKA_UNlpYnJc";
+    const { createClient } = window.supabase;
+    const supabase = createClient(SUPABASE_URL, SUPABASE_API_KEY);
+    const totalMesas = 20;
+    const mesasContainer = document.getElementById("mesas");
+    const modal = document.getElementById("modal");
+    const tituloMesa = document.getElementById("tituloMesa");
+    const listaProdutos = document.getElementById("listaProdutos");
+    let mesaSelecionada = null;
+
+    // Cria botões de mesas
+    const botoesMesas = [];
+    for (let i = 1; i <= totalMesas; i++) {
+      const btn = document.createElement("button");
+      btn.textContent = `Mesa ${i}`;
+      btn.className = "border border-green-600 text-green-700 rounded-lg py-2 font-semibold hover:bg-green-600 hover:text-white transition";
+      btn.onclick = () => abrirModal(i);
+      mesasContainer.appendChild(btn);
+      botoesMesas[i] = btn;
+    }
+
+// Após criar os botões das mesas
+async function carregarStatusMesas() {
+  const { data: mesasOcupadas, error } = await supabase
+    .from("mesas")
+    .select("numero, disponibilidade, status",)
+    //.select("numero, status, disponibilidade, comanda:comanda(mesa, cliente)") - pra aparecer o nome na mesa
+    .eq("status", "ocupado");
+  if (error) {
+    console.error("Erro ao carregar status das mesas:", error);
+    return;
+  }
+
+  mesasOcupadas.forEach(mesa => {
+    const btn = botoesMesas[mesa.numero];
+    if (btn) {
+      btn.classList.remove("border-green-600", "text-green-700");
+      btn.classList.add("bg-red-600", "text-white");
+    }
+  });
+}
+// Chama essa função após montar todos os botões
+carregarStatusMesas();
+
+    // Abre o modal e carrega produtos
+    async function abrirModal(numMesa) {
+      mesaSelecionada = numMesa;
+      tituloMesa.textContent = `Mesa ${numMesa} - Novo Pedido`;
+      listaProdutos.innerHTML = "<p class='text-gray-500 text-sm'>Carregando produtos...</p>";
+      modal.classList.remove("hidden");
+
+      const { data: produtos, error } = await supabase.from("produtos").select("*").eq("ativo", true);
+
+      if (error) {
+        listaProdutos.innerHTML = "<p class='text-red-600 text-sm'>Erro ao carregar produtos.</p>";
+        console.error(error);
+        return;
+      }
+
+      listaProdutos.innerHTML = "";
+      produtos.forEach(prod => {
+        const item = document.createElement("div");
+        item.className = "flex items-center justify-between border rounded-lg p-2";
+        item.innerHTML = `
+          <label class="flex items-center gap-2">
+            <input type="checkbox" value="${prod.id}" class="checkbox-produto">
+            <span>${prod.nome}</span>
+          </label>
+          <div class="flex items-center gap-2">
+            <button class="menos bg-gray-300 text-gray-800 px-2 rounded">-</button>
+            <span class="qtd">1</span>
+            <button class="mais bg-gray-300 text-gray-800 px-2 rounded">+</button>
+          </div>
+        `;
+        listaProdutos.appendChild(item);
+
+        const menos = item.querySelector(".menos");
+        const mais = item.querySelector(".mais");
+        const qtdSpan = item.querySelector(".qtd");
+
+        menos.onclick = () => {
+          let q = parseInt(qtdSpan.textContent);
+          if (q > 1) qtdSpan.textContent = q - 1;
+        };
+        mais.onclick = () => {
+          let q = parseInt(qtdSpan.textContent);
+          qtdSpan.textContent = q + 1;
+        };
+      });
+    }
+
+    function fecharModal() {
+      modal.classList.add("hidden");
+      document.getElementById("cliente").value = "";
+    }
+
+// Confirma o pedido e grava tudo
+async function confirmarPedido() {
+  const nomeCliente = document.getElementById("cliente").value.trim();
+  if (!nomeCliente) {
+    alert("Digite o nome do cliente antes de confirmar.");
+    return;
+  }
+
+  const agora = new Date();
+  const data = agora.toISOString().split("T")[0];
+  const hora = agora.toTimeString().split(" ")[0];
+
+  // 1️⃣ Cria ou atualiza comanda
+  const { data: existente } = await supabase
+    .from("comanda")
+    .select("id")
+    .eq("mesa", mesaSelecionada)
+    .maybeSingle();
+
+  let comandaId;
+  if (existente) {
+    const { data: up, error } = await supabase
+      .from("comanda")
+      .update({
+        cliente: nomeCliente,
+        mesa: mesaSelecionada,
+        disponibilidade: false,
+        data,
+        hora,
+        status: "aberto"
+      })
+      .eq("mesa", mesaSelecionada)
+      .select("id")
+      .single();
+    if (error) return alert("Erro ao atualizar comanda.");
+    comandaId = up.id;
+  } else {
+    const { data: nova, error } = await supabase
+      .from("comanda")
+      .insert([{
+        mesa: mesaSelecionada,
+        cliente: nomeCliente,
+        disponibilidade: false,
+        data,
+        hora,
+        status: "aberto"
+      }])
+      .select("id")
+      .single();
+    if (error) return alert("Erro ao criar comanda.");
+    comandaId = nova.id;
+  }
+
+
+// Atualiza status da mesa no Supabase
+const { error: erroMesa, data: mesaAtualizada } = await supabase
+  .from("mesas")
+  .update({
+    disponibilidade: false,
+    status: "ocupado"
+  })
+  .eq("numero", mesaSelecionada)
+  .select();
+
+if (erroMesa) {
+  console.error("Erro detalhado ao atualizar mesa:", erroMesa);
+  alert("Erro ao atualizar status da mesa: " + erroMesa.message);
+  return;
+}
+
+  // 3️⃣ Grava os pedidos da comanda
+  const itens = [];
+  document.querySelectorAll(".checkbox-produto").forEach(cb => {
+    if (cb.checked) {
+      const qtd = parseInt(cb.closest("div").querySelector(".qtd").textContent);
+      itens.push({ comanda_id: comandaId, produto_id: cb.value, quantidade: qtd });
+    }
+  });
+
+  if (itens.length === 0) {
+    alert("Nenhum produto selecionado.");
+    return;
+  }
+
+  const { error: erroPedidos } = await supabase.from("pedidos").insert(itens);
+  if (erroPedidos) {
+    console.error(erroPedidos);
+    alert("Erro ao registrar pedidos.");
+    return;
+  }
+
+  // 4️⃣ Muda visual da mesa
+  const btn = botoesMesas[mesaSelecionada];
+  btn.classList.remove("border-green-600", "text-green-700");
+  btn.classList.add("bg-red-600", "text-white");
+  btn.textContent = `Mesa ${mesaSelecionada} - ${nomeCliente}`; //inclui nome do cliente
+
+  fecharModal();
+  alert("Pedido registrado com sucesso!");
+}
+
+    // Alternar entre mesa e entrega
+    const btnMesa = document.getElementById("btnMesa");
+    const btnEntrega = document.getElementById("btnEntrega");
+
+    btnMesa.onclick = () => {
+      btnMesa.classList.add("bg-green-600", "text-white");
+      btnEntrega.classList.remove("bg-green-600", "text-white");
+      mesasContainer.classList.remove("hidden");
+    };
+
+    btnEntrega.onclick = () => {
+      btnEntrega.classList.add("bg-green-600", "text-white");
+      btnMesa.classList.remove("bg-green-600", "text-white");
+      mesasContainer.classList.add("hidden");
+    };
+  </script>
+</body>
+</html>
