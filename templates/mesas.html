@@ -6,6 +6,8 @@
   <title>Comanda de Atendimento</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 </head>
 
 <body class="bg-gray-100 min-h-screen flex items-center justify-center">
@@ -162,7 +164,14 @@
     // Confirma pedido
     async function confirmarPedido() {
       const nomeCliente = document.getElementById("cliente").value.trim();
-      if (!nomeCliente) return alert("Digite o nome do cliente.");
+      if (!nomeCliente) return Swal.fire({
+          //icon: "error",
+          title: "Ops...",
+          text: "Preencha campos solicitados",
+          confirmButtonColor: "#d33"
+        });//alert("Digite o nome do cliente.");
+
+
 
       const agora = new Date();
       const data = agora.toISOString().split("T")[0];
@@ -198,8 +207,15 @@ if (!comandaAberta || comandaAberta.status === "concluído") {
     .single();
 
   if (erroNova) {
-    console.error("Erro ao criar nova comanda:", erroNova);
-    alert("Erro ao criar nova comanda.");
+    console.error("Preencha campos solicitados", erroNova);
+    //alert("Erro ao criar nova comanda.");
+    // Depois
+    Swal.fire({
+      icon: "error",
+      title: "Ops...",
+      text: "Preencha campos solicitados",
+      confirmButtonColor: "#d33"
+    });
     return;
   }
 
@@ -213,32 +229,6 @@ if (!comandaAberta || comandaAberta.status === "concluído") {
     .eq("id", comandaId);
 }
 
-
-
-
-  /*    // Cria ou atualiza comanda
-      const { data: existente } = await supabase
-        .from("comanda")
-        .select("id")
-        .eq("mesa", mesaSelecionada)
-        .maybeSingle();
-
-      let comandaId;
-      if (existente) {
-        const { data: up } = await supabase
-          .from("comanda")
-          .update({ cliente: nomeCliente, mesa: mesaSelecionada, disponibilidade: false, data, hora, status: "aberto" })
-          .eq("mesa", mesaSelecionada)
-          .select("id").single();
-        comandaId = up.id;
-      } else {
-        const { data: nova } = await supabase
-          .from("comanda")
-          .insert([{ mesa: mesaSelecionada, cliente: nomeCliente, disponibilidade: false, data, hora, status: "aberto" }])
-          .select("id").single();
-        comandaId = nova.id;
-      }
-*/
       // Atualiza mesa
       await supabase.from("mesas").update({ disponibilidade: false, status: "ocupado" }).eq("numero", mesaSelecionada);
 
@@ -259,7 +249,14 @@ if (!comandaAberta || comandaAberta.status === "concluído") {
       btn.textContent = `Mesa ${mesaSelecionada}`;
       
       fecharModal();
-      alert("Pedido registrado com sucesso!");
+      //alert("Pedido registrado com sucesso!");
+      // Depois
+      Swal.fire({
+        icon: "sucess",
+        title: "Sucesso",
+        text: "Pedido registrado com sucesso!",
+        confirmButtonColor: "#d33"
+      });
     }
 
     // Alternar entre modos
@@ -268,6 +265,7 @@ if (!comandaAberta || comandaAberta.status === "concluído") {
     btnMesa.onclick = () => { btnMesa.classList.add("bg-green-600", "text-white"); btnEntrega.classList.remove("bg-green-600", "text-white"); mesasContainer.classList.remove("hidden"); };
     btnEntrega.onclick = () => { btnEntrega.classList.add("bg-green-600", "text-white"); btnMesa.classList.remove("bg-green-600", "text-white"); mesasContainer.classList.add("hidden"); };
 
+    
     // ================== NOVO: ENCERRAR ATENDIMENTO ==================
     btnEncerrar.onclick = () => {
       modoEncerramento = !modoEncerramento;
@@ -276,106 +274,98 @@ if (!comandaAberta || comandaAberta.status === "concluído") {
       btnEncerrar.classList.toggle("bg-gray-600");
     };
 
+   async function encerrarMesa(numMesa) {
+  // Confirmação de encerramento
+  const confirmar = await Swal.fire({
+    title: `Encerrar atendimento da Mesa ${numMesa}?`,
+    text: "Essa ação não pode ser desfeita.",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Sim, encerrar",
+    cancelButtonText: "Cancelar",
+    confirmButtonColor: "#d33",
+    cancelButtonColor: "#3085d6"
+  });
 
+  if (!confirmar.isConfirmed) return;
 
+  // Busca a comanda aberta
+  const { data: comandaAberta, error: erroComanda } = await supabase
+    .from("comanda")
+    .select("id")
+    .eq("mesa", numMesa)
+    .eq("status", "aberto")
+    .maybeSingle();
 
+  if (erroComanda || !comandaAberta) {
+    Swal.fire({
+      icon: "info",
+      title: "Nenhum atendimento aberto para esta mesa.",
+      showConfirmButton: false,
+      timer: 1500
+    });
+    return;
+  }
 
-    async function encerrarMesa(numMesa) {
-      if (!confirm(`Encerrar atendimento da Mesa ${numMesa}?`)) return;
+  const comandaId = comandaAberta.id;
 
-      // Busca a comanda aberta para essa mesa
-      const { data: comandaAberta, error: erroComanda } = await supabase
-        .from("comanda")
-        .select("id")
-        .eq("mesa", numMesa)
-        .eq("status", "aberto")
-        .maybeSingle();
+  // Busca pedidos
+  const { data: pedidos, error: erroPedidos } = await supabase
+    .from("pedidos")
+    .select(`
+      quantidade,
+      produtos ( preco )
+    `)
+    .eq("comanda_id", comandaId);
 
-      if (erroComanda || !comandaAberta) {
-        alert("Nenhum atendimento aberto para essa mesa.");
-        return;
-      }
+  if (erroPedidos || !pedidos || pedidos.length === 0) {
+    Swal.fire({
+      icon: "info",
+      title: "Sem pedidos",
+      text: "Nenhum pedido encontrado para esta comanda.",
+      confirmButtonColor: "#d33"
+    });
+    return;
+  }
 
-      const comandaId = comandaAberta.id;
+  // Calcula o total
+  let total = 0;
+  pedidos.forEach(p => {
+    const preco = p.produtos?.preco || 0;
+    total += p.quantidade * preco;
+  });
 
-      // Busca pedidos com preços dos produtos
-      const { data: pedidos, error: erroPedidos } = await supabase
-        .from("pedidos")
-        .select(`
-          quantidade,
-          produtos ( preco )
-        `)
-        .eq("comanda_id", comandaId);
+  // Atualiza registros
+  await supabase.from("pedidos")
+    .update({ status: "concluído" })
+    .eq("comanda_id", comandaId);
 
-      if (erroPedidos || !pedidos || pedidos.length === 0) {
-        alert("Nenhum pedido encontrado para esta comanda.");
-        return;
-      }
+  await supabase.from("comanda")
+    .update({ 
+      status: "concluído", 
+      disponibilidade: true, 
+      total_comanda: total 
+    })
+    .eq("id", comandaId);
 
-      // Calcula o total (quantidade × preço)
-      let total = 0;
-      pedidos.forEach(p => {
-        const preco = p.produtos?.preco || 0;
-        total += p.quantidade * preco;
-      });
+  await supabase.from("mesas")
+    .update({ disponibilidade: true, status: "disponível" })
+    .eq("numero", numMesa);
 
-      // Atualiza os registros
-      await supabase.from("pedidos")
-        .update({ status: "concluído" })
-        .eq("comanda_id", comandaId);
+  // Atualiza botão
+  const btn = botoesMesas[numMesa];
+  btn.classList.remove("bg-red-600", "text-white");
+  btn.classList.add("border-green-600", "text-green-700");
+  btn.textContent = `Mesa ${numMesa}`;
 
-      await supabase.from("comanda")
-        .update({ 
-          status: "concluído", 
-          disponibilidade: true, 
-          total_comanda: total 
-        })
-        .eq("id", comandaId);
-
-      await supabase.from("mesas")
-        .update({ disponibilidade: true, status: "disponível" })
-        .eq("numero", numMesa);
-
-      // Atualiza visualmente o botão
-      const btn = botoesMesas[numMesa];
-      btn.classList.remove("bg-red-600", "text-white");
-      btn.classList.add("border-green-600", "text-green-700");
-      btn.textContent = `Mesa ${numMesa}`;
-
-      alert(`Mesa ${numMesa} encerrada! Total da comanda: R$ ${total.toFixed(2)}`);
-    }
-
-
-
-
-
-/*
-    async function encerrarMesa(numMesa) {
-      if (!confirm(`Encerrar atendimento da Mesa ${numMesa}?`)) return;
-
-      const { data: comandaAberta } = await supabase
-        .from("comanda")
-        .select("id")
-        .eq("mesa", numMesa)
-        .eq("status", "aberto")
-        .maybeSingle();
-
-      if (!comandaAberta) return alert("Nenhum atendimento aberto para essa mesa.");
-
-      // Atualiza pedidos e comanda
-      await supabase.from("pedidos").update({ status: "concluído" }).eq("comanda_id", comandaAberta.id);
-      await supabase.from("comanda").update({ status: "concluído", disponibilidade: true }).eq("id", comandaAberta.id);
-
-      // Libera mesa
-      await supabase.from("mesas").update({ disponibilidade: true, status: "disponível" }).eq("numero", numMesa);
-
-      const btn = botoesMesas[numMesa];
-      btn.classList.remove("bg-red-600", "text-white");
-      btn.classList.add("border-green-600", "text-green-700");
-      btn.textContent = `Mesa ${numMesa}`;
-
-      alert(`Mesa ${numMesa} encerrada e liberada!`);
-    }*/
+  // Mensagem final
+  Swal.fire({
+    icon: "success",
+    title: "Mesa encerrada!",
+    text: `Total da comanda: R$ ${total.toFixed(2)}`,
+    confirmButtonColor: "#3085d6"
+  });
+}
 
     carregarStatusMesas();
   </script>
